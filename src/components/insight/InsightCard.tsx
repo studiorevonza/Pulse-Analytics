@@ -27,7 +27,7 @@ export const InsightCard = ({ insight }: InsightCardProps) => {
 
   return (
     <div className={cn(
-      "insight-card animate-slide-up",
+      "insight-card animate-slide-up bg-background/30 backdrop-blur-sm rounded-xl border border-border/50 p-4",
       colorMap[insight.type].split(' ')[1]
     )}>
       <div className="flex items-start gap-3">

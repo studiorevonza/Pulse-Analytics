@@ -1,10 +1,10 @@
 import { Lightbulb, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { InsightCard } from './InsightCard';
-import { generateInsights } from '@/lib/sampleData';
+import { useData } from '@/contexts/DataContext';
 
 export const InsightsPanel = () => {
-  const insights = generateInsights();
+  const { insights } = useData();
 
   return (
     <div className="p-6 animate-fade-in">

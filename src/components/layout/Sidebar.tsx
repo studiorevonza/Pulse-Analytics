@@ -6,11 +6,12 @@ import {
   Lightbulb, 
   Database,
   FileSpreadsheet,
-  Settings
+  Settings,
+  Download
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type Tab = 'dashboard' | 'chat' | 'charts' | 'predictions' | 'insights' | 'data';
+type Tab = 'dashboard' | 'chat' | 'charts' | 'predictions' | 'insights' | 'data' | 'dashboard-generator' | 'dashboard-selector' | 'report';
 
 interface SidebarProps {
   activeTab: Tab;
@@ -24,6 +25,9 @@ const navItems = [
   { id: 'predictions' as Tab, icon: TrendingUp, label: 'Predictions' },
   { id: 'insights' as Tab, icon: Lightbulb, label: 'Insights' },
   { id: 'data' as Tab, icon: Database, label: 'Data Explorer' },
+  { id: 'dashboard-generator' as Tab, icon: BarChart3, label: 'Dashboard Builder' },
+  { id: 'dashboard-selector' as Tab, icon: BarChart3, label: 'Dashboard Templates' },
+  { id: 'report' as Tab, icon: Download, label: 'Reports' },
 ];
 
 export const Sidebar = ({ activeTab, onTabChange }: SidebarProps) => {

@@ -13,6 +13,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { useTheme } from '@/components/theme/ThemeProvider';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/UserContext';
+import { useNavigate } from 'react-router-dom';
 
 interface UserProfile {
   name: string;
@@ -22,21 +24,36 @@ interface UserProfile {
 }
 
 const defaultProfile: UserProfile = {
-  name: 'John Doe',
-  email: 'john.doe@company.com',
-  role: 'Data Analyst',
+  name: '',
+  email: '',
+  role: '',
 };
 
 export const ProfileDropdown = () => {
   const { theme, toggleTheme } = useTheme();
-  const [profile] = useState<UserProfile>(defaultProfile);
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  
+  // Use authenticated user if available, otherwise use default
+  const profile: UserProfile = user ? {
+    name: user.name,
+    email: user.email,
+    role: user.role || 'User',
+  } : {
+    name: 'Guest User',
+    email: 'guest@example.com',
+    role: 'Guest',
+  };
+  
   const [notifications, setNotifications] = useState(true);
 
   const handleLogout = () => {
+    logout();
     toast({
       title: "Logged out",
       description: "You have been successfully logged out.",
     });
+    navigate('/login');
   };
 
   const handleNotificationToggle = () => {
@@ -56,7 +73,7 @@ export const ProfileDropdown = () => {
           <Avatar className="h-8 w-8">
             <AvatarImage src={profile.avatar} alt={profile.name} />
             <AvatarFallback className="bg-primary/20 text-primary text-sm">
-              {profile.name.split(' ').map(n => n[0]).join('')}
+              {profile.name ? profile.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'GU'}
             </AvatarFallback>
           </Avatar>
           <div className="hidden md:flex flex-col items-start">
@@ -72,7 +89,7 @@ export const ProfileDropdown = () => {
             <Avatar className="h-12 w-12">
               <AvatarImage src={profile.avatar} alt={profile.name} />
               <AvatarFallback className="bg-primary/20 text-primary">
-                {profile.name.split(' ').map(n => n[0]).join('')}
+                {profile.name ? profile.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'GU'}
               </AvatarFallback>
             </Avatar>
             <div className="flex flex-col">
@@ -84,24 +101,7 @@ export const ProfileDropdown = () => {
         </DropdownMenuLabel>
         <DropdownMenuSeparator className="bg-border" />
         
-        {/* Theme Toggle */}
-        <div className="px-2 py-2">
-          <div className="flex items-center justify-between px-2 py-2 rounded-md hover:bg-secondary transition-colors">
-            <div className="flex items-center gap-2">
-              {theme === 'dark' ? (
-                <Moon className="h-4 w-4 text-muted-foreground" />
-              ) : (
-                <Sun className="h-4 w-4 text-muted-foreground" />
-              )}
-              <span className="text-sm text-foreground">Dark Mode</span>
-            </div>
-            <Switch 
-              checked={theme === 'dark'} 
-              onCheckedChange={toggleTheme}
-              className="data-[state=checked]:bg-primary"
-            />
-          </div>
-        </div>
+
 
         {/* Notifications Toggle */}
         <div className="px-2 pb-2">

@@ -3,77 +3,24 @@ import { Send, Sparkles, BarChart3, TrendingUp, Lightbulb } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ChatMessage } from '@/types/data';
 import { cn } from '@/lib/utils';
+import { useData } from '@/contexts/DataContext';
 
 const suggestedQueries = [
-  { icon: BarChart3, text: "Show me sales trends by month" },
-  { icon: TrendingUp, text: "What will Q1 2025 sales look like?" },
-  { icon: Lightbulb, text: "Find anomalies in the data" },
+  { icon: BarChart3, text: "Show me trends in my data" },
+  { icon: TrendingUp, text: "What predictions can you make?" },
+  { icon: Lightbulb, text: "Find insights in my dataset" },
 ];
 
-const mockResponses: Record<string, string> = {
-  "sales trends": `Based on your data analysis, here are the key sales trends:
 
-📈 **Overall Trend**: Sales have shown a strong upward trajectory with 23% YoY growth
-
-**Monthly Breakdown:**
-- **Q1**: Average $35,000/month - seasonal low
-- **Q2**: Average $43,000/month - recovery phase  
-- **Q3**: Average $48,500/month - growth acceleration
-- **Q4**: Average $57,000/month - peak season
-
-**Key Insight**: December showed the highest performance at $62,000, driven by holiday demand in Electronics and Clothing categories.`,
-
-  "q1 2025": `Based on historical patterns and trend analysis, here's my Q1 2025 forecast:
-
-🔮 **Prediction Summary**:
-
-| Month | Predicted Sales | Confidence |
-|-------|----------------|------------|
-| Jan 2025 | $48,000 | 92% |
-| Feb 2025 | $52,000 | 88% |
-| Mar 2025 | $58,000 | 85% |
-
-**Total Q1 2025**: ~$158,000 (vs $105,000 in Q1 2024)
-
-📊 **Growth Driver**: The upward trend is primarily driven by Electronics (+31%) and the expansion into the Western region.`,
-
-  "anomalies": `I've detected 3 significant anomalies in your dataset:
-
-⚠️ **Anomaly 1: March Sales Spike**
-- Value: $45,000 (45% above expected)
-- Likely cause: Spring promotion campaign
-- Confidence: 87%
-
-⚠️ **Anomaly 2: Electronics Q4 Surge**
-- Value: +31% above trend
-- Likely cause: New product launch + holiday season
-- Confidence: 91%
-
-⚠️ **Anomaly 3: Western Region Underperformance**
-- Pattern: 15% below other regions in Q2
-- Possible cause: Distribution issues
-- Recommendation: Investigate supply chain
-
-Would you like me to dive deeper into any of these?`,
-
-  default: `I've analyzed your data and here's what I found:
-
-📊 **Quick Summary:**
-- Total Records: 240 rows across 6 columns
-- Time Range: January - December 2024
-- Key Metrics: Sales, Profit, Units
-
-The data shows healthy growth patterns with seasonal variations. Electronics category leads with 28% of total revenue.
-
-What specific aspect would you like me to explore?`
-};
 
 export const AIChatPanel = () => {
+  const { currentDataset, stats, insights, predictions } = useData();
+  
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
       role: 'assistant',
-      content: `Hello! I'm your AI data analyst. I've loaded your **Sales Data 2024** dataset with 240 records.
+      content: `Hello! I'm your AI data analyst. I've loaded your **${currentDataset?.name || 'Uploaded'}** dataset with ${currentDataset?.rowCount || 0} records.
 
 I can help you:
 - 📊 Analyze trends and patterns
@@ -99,16 +46,44 @@ What would you like to explore?`,
 
   const getResponse = (query: string): string => {
     const lowerQuery = query.toLowerCase();
+    
     if (lowerQuery.includes('trend') || lowerQuery.includes('sales')) {
-      return mockResponses['sales trends'];
+      // Generate trend analysis based on actual data
+      const salesStat = stats.find(s => s.column.toLowerCase().includes('sales') || s.column.toLowerCase().includes('revenue')) || null;
+      const profitStat = stats.find(s => s.column.toLowerCase().includes('profit')) || null;
+      
+      return `Based on your data analysis, here are the key trends:
+
+📈 **Overall Analysis**: 
+${salesStat ? `Sales show mean value of $${salesStat.mean?.toLocaleString()} with a range from $${salesStat.min?.toLocaleString()} to $${salesStat.max?.toLocaleString()}` : 'No sales data found'}
+
+${currentDataset ? `**Dataset Info**: ${currentDataset.name} has ${currentDataset.rowCount} records with ${currentDataset.columns.length} columns` : 'Dataset info unavailable'}
+
+${insights.length > 0 ? `**Key Insights**: ${insights[0].title} - ${insights[0].description}` : 'No insights generated yet'}`;
     }
-    if (lowerQuery.includes('q1') || lowerQuery.includes('2025') || lowerQuery.includes('predict') || lowerQuery.includes('forecast')) {
-      return mockResponses['q1 2025'];
+    
+    if (lowerQuery.includes('predict') || lowerQuery.includes('forecast') || lowerQuery.includes('q1')) {
+      // Generate prediction based on actual predictions
+      return `Based on historical patterns and trend analysis, here's my forecast:\n\n🔮 **Prediction Summary**: \n${predictions.length > 0 ? `Predictions available for ${predictions.map(p => p.column).join(', ')} with ${predictions[0].accuracy ? (predictions[0].accuracy * 100).toFixed(0) + '%' : 'unknown'} accuracy` : 'No predictions generated yet'}\n\n${currentDataset ? `**Dataset**: ${currentDataset.name} (${currentDataset.rowCount} records)` : 'Dataset info unavailable'}\n\n📊 **Recommendation**: Upload more data for better predictions.`;
     }
+    
     if (lowerQuery.includes('anomal') || lowerQuery.includes('unusual') || lowerQuery.includes('outlier')) {
-      return mockResponses['anomalies'];
+      // Generate anomaly detection based on actual insights
+      return `I've analyzed your dataset for anomalies:\n\n⚠️ **Anomaly Detection Results**: \n${insights.length > 0 ? insights.slice(0, 3).map(i => `• ${i.title}: ${i.description}`).join('\n') : 'No anomalies detected or insights generated yet'}\n\n${currentDataset ? `**Dataset**: ${currentDataset.name} (${currentDataset.rowCount} records)` : 'Dataset info unavailable'}\n\nWould you like me to dive deeper into any of these?`;
     }
-    return mockResponses['default'];
+    
+    // Default response with actual dataset info
+    return `I've analyzed your dataset and here's what I found:
+
+📊 **Dataset Summary**: 
+${currentDataset ? `- Name: ${currentDataset.name}` : '- No dataset loaded'}
+${currentDataset ? `- Records: ${currentDataset.rowCount}` : ''}
+${currentDataset ? `- Columns: ${currentDataset.columns.length}` : ''}
+${stats.length > 0 ? `- Numeric columns: ${stats.filter(s => s.type === 'number').length}` : ''}
+
+${insights.length > 0 ? `💡 **Key Insights**: ${insights[0].title || 'No title'}` : 'Upload data to generate insights'}
+
+What specific aspect would you like me to explore?`;
   };
 
   const handleSend = async () => {

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Upload, FileSpreadsheet, X, Check, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useData } from '@/contexts/DataContext';
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -12,6 +13,8 @@ export const UploadModal = ({ isOpen, onClose }: UploadModalProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
+  
+  const { addDataset, currentDataset } = useData();
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -38,14 +41,17 @@ export const UploadModal = ({ isOpen, onClose }: UploadModalProps) => {
     }
   };
 
-  const handleFile = (file: File) => {
+  const handleFile = async (file: File) => {
     setFile(file);
     setStatus('uploading');
     
-    // Simulate upload
-    setTimeout(() => {
+    try {
+      await addDataset(file);
       setStatus('success');
-    }, 1500);
+    } catch (error) {
+      console.error('Upload failed:', error);
+      setStatus('error');
+    }
   };
 
   const handleClose = () => {
@@ -123,11 +129,11 @@ export const UploadModal = ({ isOpen, onClose }: UploadModalProps) => {
                 </div>
                 <div className="flex items-center justify-between text-sm mb-2">
                   <span className="text-muted-foreground">Detected Rows</span>
-                  <span className="text-primary">240</span>
+                  <span className="text-primary">{currentDataset?.rowCount || 'Processing...'}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Columns</span>
-                  <span className="text-primary">6</span>
+                  <span className="text-primary">{currentDataset?.columns.length || 'Processing...'}</span>
                 </div>
               </div>
               <Button variant="glow" className="mt-4" onClick={handleClose}>

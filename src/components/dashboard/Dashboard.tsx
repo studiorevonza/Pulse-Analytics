@@ -2,43 +2,51 @@ import { DollarSign, TrendingUp, ShoppingCart, Target } from 'lucide-react';
 import { StatCard } from './StatCard';
 import { SalesChart } from '../charts/SalesChart';
 import { CategoryChart } from '../charts/CategoryChart';
-import { InsightCard } from '../insights/InsightCard';
-import { PredictionMini } from '../predictions/PredictionMini';
-import { generateInsights } from '@/lib/sampleData';
+import { InsightCard } from '../insight/InsightCard';
+import { PredictionMini } from '../prediction/PredictionMini';
+import { useData } from '@/contexts/DataContext';
 
 export const Dashboard = () => {
-  const insights = generateInsights().slice(0, 2);
+  const { insights, stats, currentDataset } = useData();
+  
+  // Calculate stats for the stat cards
+  const revenueStat = stats.find(stat => stat.column.toLowerCase().includes('sales') || stat.column.toLowerCase().includes('revenue'));
+  const profitStat = stats.find(stat => stat.column.toLowerCase().includes('profit'));
+  const unitsStat = stats.find(stat => stat.column.toLowerCase().includes('unit') || stat.column.toLowerCase().includes('quantity'));
+  
+  // Use available insights or default to an empty array
+  const displayedInsights = insights.slice(0, 2);
 
   return (
-    <div className="p-6 space-y-6 animate-fade-in">
+    <div className="p-6 space-y-6 animate-fade-in bg-transparent">
       {/* Stats Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Total Revenue"
-          value="$549,000"
-          change={23}
-          trend="up"
+          value={revenueStat ? `$${Math.round(revenueStat.mean || 0).toLocaleString()}` : "$0"}
+          change={revenueStat ? 5 : 0}
+          trend={revenueStat ? "up" : "stable"}
           icon={DollarSign}
         />
         <StatCard
           title="Total Profit"
-          value="$141,700"
-          change={18}
-          trend="up"
+          value={profitStat ? `$${Math.round(profitStat.mean || 0).toLocaleString()}` : "$0"}
+          change={profitStat ? 3 : 0}
+          trend={profitStat ? "up" : "stable"}
           icon={TrendingUp}
         />
         <StatCard
           title="Units Sold"
-          value="4,690"
-          change={12}
-          trend="up"
+          value={unitsStat ? `${Math.round(unitsStat.mean || 0).toLocaleString()}` : "0"}
+          change={unitsStat ? 7 : 0}
+          trend={unitsStat ? "up" : "stable"}
           icon={ShoppingCart}
         />
         <StatCard
           title="Avg. Margin"
-          value="25.8%"
-          change={-2}
-          trend="down"
+          value={profitStat && revenueStat ? `${((profitStat.mean || 0) / (revenueStat.mean || 1) * 100).toFixed(1)}%` : "0%"}
+          change={2}
+          trend="up"
           icon={Target}
         />
       </div>
@@ -60,9 +68,17 @@ export const Dashboard = () => {
             <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
             AI Insights
           </h3>
-          {insights.map(insight => (
-            <InsightCard key={insight.id} insight={insight} />
-          ))}
+          {displayedInsights.length > 0 ? (
+            displayedInsights.map(insight => (
+              <InsightCard key={insight.id} insight={insight} />
+            ))
+          ) : (
+            <div className="p-4 bg-secondary/30 backdrop-blur-sm rounded-xl border border-border/50">
+              <p className="text-muted-foreground text-center py-4">
+                Upload data to generate insights
+              </p>
+            </div>
+          )}
         </div>
         <div>
           <PredictionMini />

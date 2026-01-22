@@ -15,7 +15,7 @@ const predictionData = [
 
 export const PredictionMini = () => {
   return (
-    <div className="chart-container h-full">
+    <div className="chart-container h-full bg-background/30 backdrop-blur-sm rounded-xl border border-border/50 p-6">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-lg font-semibold flex items-center gap-2">

@@ -1,20 +1,36 @@
 import { Database, Search, Download, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { generateStats } from '@/lib/sampleData';
+import { useData } from '@/contexts/DataContext';
+
+import { useState } from 'react';
+import { toast } from '@/hooks/use-toast';
 
 export const DataExplorer = () => {
-  const stats = generateStats();
+  const { stats, currentDataset } = useData();
+  const { toast } = useToast();
+  const [searchTerm, setSearchTerm] = useState('');
   
-  const sampleRows = [
-    { month: 'Jan', category: 'Electronics', region: 'North', sales: 32500, units: 285, profit: 8750 },
-    { month: 'Jan', category: 'Electronics', region: 'South', sales: 28400, units: 248, profit: 7200 },
-    { month: 'Jan', category: 'Clothing', region: 'North', sales: 18200, units: 320, profit: 5800 },
-    { month: 'Jan', category: 'Clothing', region: 'East', sales: 21500, units: 385, profit: 6900 },
-    { month: 'Feb', category: 'Electronics', region: 'West', sales: 25800, units: 225, profit: 6500 },
-    { month: 'Feb', category: 'Food', region: 'North', sales: 12400, units: 520, profit: 2800 },
-    { month: 'Feb', category: 'Home', region: 'South', sales: 19800, units: 165, profit: 5200 },
-    { month: 'Mar', category: 'Sports', region: 'East', sales: 16500, units: 275, profit: 4500 },
-  ];
+  // Get sample rows from current dataset if available
+  const allSampleRows = currentDataset ? 
+    Array.from({ length: Math.min(8, currentDataset.rowCount) }, (_, i) => {
+      const row: Record<string, string | number | boolean | null> = {};
+      currentDataset.columns.forEach(col => {
+        row[col.name] = col.values[i] ?? 'N/A';
+      });
+      return row;
+    }) : [];
+    
+  // Filter rows based on search term
+  const filteredSampleRows = allSampleRows.filter(row => {
+    if (!searchTerm) return true;
+    return Object.values(row).some(value => 
+      value !== null && 
+      value !== undefined && 
+      String(value).toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  });
+    
+  const sampleRows = searchTerm ? filteredSampleRows : allSampleRows;
 
   return (
     <div className="p-6 space-y-6 animate-fade-in">
@@ -31,11 +47,48 @@ export const DataExplorer = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="glass">
+          <Button variant="glass" onClick={() => toast({
+            title: "Filter Applied",
+            description: "Filter functionality would be implemented in a full version.",
+          })}>
             <Filter className="w-4 h-4" />
             Filter
           </Button>
-          <Button variant="glass">
+          <Button variant="glass" onClick={() => {
+            if (currentDataset) {
+              // Create CSV content from the current dataset
+              const headers = currentDataset.columns.map(col => col.name).join(',');
+              const rows = [];
+              for (let i = 0; i < currentDataset.rowCount; i++) {
+                const row = currentDataset.columns.map(col => {
+                  const value = col.values[i];
+                  if (value === null || value === undefined) return '';
+                  return typeof value === 'string' && value.includes(',') ? `"${value}"` : value;
+                }).join(',');
+                rows.push(row);
+              }
+              
+              const csvContent = `data:text/csv;charset=utf-8,${headers}\n${rows.join('\n')}`;
+              const encodedUri = encodeURI(csvContent);
+              const link = document.createElement('a');
+              link.setAttribute('href', encodedUri);
+              link.setAttribute('download', `${currentDataset.name || 'dataset'}.csv`);
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              
+              toast({
+                title: "Export Success",
+                description: `Dataset exported as CSV successfully`,
+              });
+            } else {
+              toast({
+                title: "Export Failed",
+                description: "No dataset loaded to export",
+                variant: "destructive"
+              });
+            }
+          }}>
             <Download className="w-4 h-4" />
             Export
           </Button>
@@ -48,6 +101,8 @@ export const DataExplorer = () => {
         <input
           type="text"
           placeholder="Search in data..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full bg-secondary/50 border border-border/50 rounded-xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
         />
       </div>
@@ -107,29 +162,41 @@ export const DataExplorer = () => {
       <div className="chart-container">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Data Preview</h3>
-          <span className="text-sm text-muted-foreground">Showing 8 of 240 rows</span>
+          <span className="text-sm text-muted-foreground">
+            {currentDataset ? 
+              searchTerm ? 
+                `Showing ${filteredSampleRows.length} of ${currentDataset.rowCount} matching rows` :
+                `Showing ${Math.min(8, currentDataset.rowCount)} of ${currentDataset.rowCount} rows`
+              : 'No dataset loaded'}
+          </span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-border/50">
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Month</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Category</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Region</th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Sales</th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Units</th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Profit</th>
+                {currentDataset && currentDataset.columns.map((col, idx) => (
+                  <th 
+                    key={idx}
+                    className={`text-left py-3 px-4 text-sm font-medium text-muted-foreground ${['number'].includes(col.type) ? 'text-right' : 'text-left'}`}>
+                    {col.name}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {sampleRows.map((row, i) => (
                 <tr key={i} className="border-b border-border/30 hover:bg-secondary/30 transition-colors">
-                  <td className="py-3 px-4 font-mono">{row.month}</td>
-                  <td className="py-3 px-4">{row.category}</td>
-                  <td className="py-3 px-4">{row.region}</td>
-                  <td className="py-3 px-4 text-right font-mono text-primary">${row.sales.toLocaleString()}</td>
-                  <td className="py-3 px-4 text-right font-mono">{row.units}</td>
-                  <td className="py-3 px-4 text-right font-mono text-success">${row.profit.toLocaleString()}</td>
+                  {currentDataset && currentDataset.columns.map((col, j) => (
+                    <td 
+                      key={j} 
+                      className={`py-3 px-4 ${col.type === 'number' ? 'text-right font-mono' : 'text-left'} ${col.name.toLowerCase().includes('profit') || col.name.toLowerCase().includes('sales') ? 'text-success' : ''}`}>
+                      {typeof row[col.name] === 'number' && !isNaN(row[col.name] as number) ? 
+                        (col.name.toLowerCase().includes('profit') || col.name.toLowerCase().includes('sales') || col.name.toLowerCase().includes('cost')) ? 
+                          `$${(row[col.name] as number).toLocaleString()}` :
+                          (row[col.name] as number).toLocaleString() :
+                        row[col.name]}
+                    </td>
+                  ))}
                 </tr>
               ))}
             </tbody>

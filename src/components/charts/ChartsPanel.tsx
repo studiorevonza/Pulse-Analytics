@@ -5,7 +5,19 @@ import { CategoryChart } from './CategoryChart';
 import { CorrelationChart } from './CorrelationChart';
 import { RegionChart } from './RegionChart';
 
+import { useState } from 'react';
+import { toast } from '@/hooks/use-toast';
+
 export const ChartsPanel = () => {
+  const { toast } = useToast();
+  
+  const handleCreateChart = () => {
+    toast({
+      title: "Chart Creation",
+      description: "Chart creation feature would open a new modal in a full implementation.",
+    });
+  };
+  
   return (
     <div className="p-6 space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
@@ -20,7 +32,7 @@ export const ChartsPanel = () => {
             Interactive charts and visual analytics
           </p>
         </div>
-        <Button variant="glow">
+        <Button variant="glow" onClick={handleCreateChart}>
           <Plus className="w-4 h-4" />
           Create Chart
         </Button>
