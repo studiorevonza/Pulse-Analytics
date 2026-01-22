@@ -15,8 +15,8 @@ export const Header = ({ onUploadClick }: HeaderProps) => {
             <Brain className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold gradient-text">DataMind AI</h1>
-            <p className="text-xs text-muted-foreground">Intelligent Analytics</p>
+            <h1 className="text-lg font-semibold gradient-text">PULSE ANALYTICS</h1>
+            <p className="text-xs text-muted-foreground">Business Intelligence</p>
           </div>
         </div>
 
